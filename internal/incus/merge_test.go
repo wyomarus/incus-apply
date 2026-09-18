@@ -14,6 +14,7 @@ func TestCloneResource_PreservesYAMLDashFields(t *testing.T) {
 			Type:       "instance",
 			Name:       "myinstance",
 			Remote:     "server-a",
+			Project:    "myproject",
 			SourceFile: "/some/path.yaml",
 		},
 		InstanceFields: config.InstanceFields{Image: "images:debian/13"},
@@ -29,6 +30,14 @@ func TestCloneResource_PreservesYAMLDashFields(t *testing.T) {
 	}
 	if clone.Type != "instance" {
 		t.Errorf("Type = %q, want %q", clone.Type, "instance")
+	}
+	// Regression test for a real bug: Project is set by --project only (see
+	// config.Base's own yaml:"-" tag), not read from YAML, so it silently
+	// dropped out of every resource cloneResource produced -- and Create()
+	// builds its incus command from the clone, not the original resource,
+	// so every create/launch call ended up missing --project entirely.
+	if clone.Project != "myproject" {
+		t.Errorf("Project = %q, want %q", clone.Project, "myproject")
 	}
 	if clone.SourceFile != "/some/path.yaml" {
 		t.Errorf("SourceFile = %q, want %q", clone.SourceFile, "/some/path.yaml")
